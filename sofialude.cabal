@@ -14,12 +14,15 @@ extra-source-files:
   LICENSE
   README.md
 
-library sofialude
+library
   build-depends:
-    align
+    array
+    , assoc
     , base
     , bytestring
+    , bifunctors
     , comonad
+    , comonad-extras
     , containers
     , data-fix
     , functor-combinators
@@ -27,13 +30,15 @@ library sofialude
     , mtl
     , profunctors
     , recursion-schemes
-    , relude
+    , relude >= 1.0
+    , semialign
     , smash
     , tagged
     , text
     , these
     , time
-    , witherable
+    , unordered-containers
+    , validation
 
 
   mixins:
@@ -99,6 +104,5 @@ library sofialude
     UnicodeSyntax
     ViewPatterns
 
-  main-is:            Main.hs
   hs-source-dirs:     src
   default-language:   Haskell2010
