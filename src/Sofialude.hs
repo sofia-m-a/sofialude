@@ -157,6 +157,7 @@ import Data.Wedge
     wedgeRight,
     type (∨),
   )
+import Data.Wedge qualified
 import Data.Zip
 import Relude.Applicative
 import Relude.Base hiding (chr)
@@ -412,14 +413,14 @@ instance Assoc Smash where
   unassoc = Data.Smash.reassocRL
 
 instance Swap Smash where
-  swap = Data.Smash.swapCan
+  swap = Data.Smash.swapSmash
 
 instance Assoc Wedge where
   assoc = Data.Wedge.reassocLR
   unassoc = Data.Wedge.reassocRL
 
 instance Swap Wedge where
-  swap = Data.Wedge.swapCan
+  swap = Data.Wedge.swapWedge
 
 -- gatherCans :: (Zip f, Functor f, Monoid (f (Can a b))) => Can (f a) (f b) -> f (Can a b)
 -- gatherCans Non = mempty

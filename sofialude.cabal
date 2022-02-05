@@ -16,6 +16,8 @@ extra-source-files:
   README.md
 
 library
+  exposed-modules: Sofialude
+
   build-depends:
     , array
     , assoc
@@ -43,7 +45,6 @@ library
 
   mixins:
     base hiding (Prelude),
-    relude
 
   ghc-options:
     -Wall -Wincomplete-record-updates -Wincomplete-uni-patterns
