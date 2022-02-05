@@ -2,7 +2,68 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Sofialude
-  ( module Relude.Applicative,
+  ( module Control.Comonad,
+    module Control.Comonad.Env,
+    module Control.Comonad.Hoist.Class,
+    module Control.Comonad.Identity,
+    module Control.Comonad.Store,
+    module Control.Comonad.Store.Pointer,
+    module Control.Comonad.Store.Zipper,
+    module Control.Comonad.Traced,
+    module Control.Comonad.Trans.Env,
+    module Control.Comonad.Trans.Store,
+    module Control.Comonad.Trans.Traced,
+    module Control.Lens,
+    module Control.Monad.Trans.Can,
+    module Control.Monad.Trans.Smash,
+    module Control.Monad.Trans.Wedge,
+    module Data.Align,
+    module Data.Array.IArray,
+    module Data.Array.IO,
+    module Data.Array.MArray.Safe,
+    module Data.Array.ST,
+    module Data.Array.Storable,
+    module Data.Array.Unboxed,
+    module Data.Bifunctor.Assoc,
+    module Data.Bifunctor.Biff,
+    module Data.Bifunctor.Clown,
+    module Data.Bifunctor.Flip,
+    module Data.Bifunctor.Join,
+    module Data.Bifunctor.Joker,
+    --module Data.Bifunctor.Product,
+    --module Data.Bifunctor.Sum,
+    module Data.Bifunctor.Swap,
+    module Data.Bifunctor.Tannen,
+    module Data.Can,
+    module Data.Crosswalk,
+    module Data.Fix,
+    module Data.Functor.Base,
+    -- module Data.Functor.Combinator,
+    module Data.Functor.Foldable,
+    module Data.Functor.These,
+    module Data.Ix,
+    module Data.Profunctor,
+    module Data.Profunctor.Choice,
+    module Data.Profunctor.Closed,
+    module Data.Profunctor.Mapping,
+    module Data.Profunctor.Ran,
+    module Data.Profunctor.Rep,
+    module Data.Profunctor.Sieve,
+    module Data.Profunctor.Strong,
+    -- module Data.Profunctor.Traversing,
+    module Data.Profunctor.Yoneda,
+    module Data.Semialign,
+    module Data.Smash,
+    module Data.Tagged,
+    module Data.These,
+    module Data.These.Combinators,
+    module Data.Time.Calendar,
+    module Data.Time.Clock,
+    module Data.Time.LocalTime,
+    module Data.Validation,
+    module Data.Wedge,
+    module Data.Zip,
+    module Relude.Applicative,
     module Relude.Base,
     module Relude.Bool,
     module Relude.Container,
@@ -21,6 +82,38 @@ module Sofialude
     module Relude.Numeric,
     module Relude.Print,
     module Relude.String,
+    map,
+    (++),
+    mapIArray,
+    mapIIndices,
+    getIndices,
+    askW,
+    asksW,
+    localW,
+    traceW,
+    zipperSize,
+    Filterable (..),
+    partitionEithers,
+    partitionWith,
+    filter,
+    lefts,
+    rights,
+    (<$?>),
+    (<&?>),
+    partitionThese,
+    partitionHereThere,
+    catThis,
+    catThat,
+    catThese,
+    catHere,
+    catThere,
+    Witherable (..),
+    witherEither,
+    filterA,
+    witherMap,
+    eitherToValidation,
+    validationToEither,
+    validateOrElse,
   )
 where
 
@@ -38,7 +131,7 @@ import Control.Comonad.Traced as Trace
 import Control.Comonad.Trans.Env (Env, EnvT (..), env, lowerEnvT, runEnv, runEnvT)
 import Control.Comonad.Trans.Store (Store, StoreT (..), runStore, runStoreT, store)
 import Control.Comonad.Trans.Traced hiding (trace)
-import Control.Lens
+import Control.Lens hiding (index, indices, para, universe)
 import Control.Monad.Trans.Can
 import Control.Monad.Trans.Smash
 import Control.Monad.Trans.Wedge
@@ -83,8 +176,8 @@ import Data.Can
   )
 import Data.Can qualified
 import Data.Crosswalk
-import Data.Fix hiding (ana, anaM, cata, cataM, hylo, hyloM)
-import Data.Functor.Base
+import Data.Fix hiding (ana, anaM, cata, cataM, hylo, hyloM, refold)
+import Data.Functor.Base hiding (head, tail)
 import Data.Functor.Combinator hiding (collectI, getI)
 import Data.Functor.Foldable hiding (fold)
 import Data.Functor.Product qualified as Product
@@ -160,9 +253,9 @@ import Data.Wedge
 import Data.Wedge qualified
 import Data.Zip
 import Relude.Applicative
-import Relude.Base hiding (chr)
+import Relude.Base hiding (chr, ord)
 import Relude.Bool
-import Relude.Container
+import Relude.Container hiding (swap)
 import Relude.Debug
 import Relude.DeepSeq
 import Relude.Enum
@@ -170,9 +263,9 @@ import Relude.Exception
 import Relude.File
 import Relude.Foldable
 import Relude.Function
-import Relude.Functor
+import Relude.Functor hiding ((??)) -- the same as from Control.Lens
 import Relude.Lifted
-import Relude.List hiding (filter, map, partitionWith, zip, zip3, zipWith, (++))
+import Relude.List hiding (filter, map, partitionWith, repeat, uncons, unzip, zip, zip3, zipWith, (++))
 import Relude.Monad hiding (catMaybes, lefts, mapMaybe, mapMaybeM, partitionEithers, rights)
 import Relude.Monoid hiding (Option, WrappedMonoid)
 import Relude.Numeric
