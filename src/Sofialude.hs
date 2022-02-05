@@ -108,28 +108,28 @@ import Data.Profunctor.Traversing
 import Data.Profunctor.Yoneda
 import Data.Semialign
 import Data.Smash
-  ( Smash(..)
-  , type (⨳)
-  , toSmash,
-  , fromSmash
-  , smashFst
-  , smashSnd
-  , quotSmash
-  , hulkSmash
-  , isSmash
-  , isNada
-  , smashDiag
-  , smashDiag'
-  , smash
-  , foldSmashes
-  , smashCurry
-  , smashUncurry
-  , distributeSmash
-  , undistributeSmash
-  , pairSmash
-  , unpairSmash
-  , pairSmashCan
-  , unpairSmashCan
+  ( Smash (..),
+    distributeSmash,
+    foldSmashes,
+    fromSmash,
+    hulkSmash,
+    isNada,
+    isSmash,
+    pairSmash,
+    pairSmashCan,
+    quotSmash,
+    smash,
+    smashCurry,
+    smashDiag,
+    smashDiag',
+    smashFst,
+    smashSnd,
+    smashUncurry,
+    toSmash,
+    undistributeSmash,
+    unpairSmash,
+    unpairSmashCan,
+    type (⨳),
   )
 import Data.Smash qualified
 import Data.Tagged
@@ -141,8 +141,22 @@ import Data.Time.LocalTime
 import Data.Validation hiding (fromEither, orElse, toEither)
 import Data.Validation qualified as Validation
 import Data.Wedge
-  ( Wedge(..), type (∨), quotWedge,
-    wedgeLeft, wedgeRight, fromWedge, toWedge, isHere, isThere, isNowhere, wedge, foldHeres, foldTheres, distributeWedge, codistributeWedge)
+  ( Wedge (..),
+    codistributeWedge,
+    distributeWedge,
+    foldHeres,
+    foldTheres,
+    fromWedge,
+    isHere,
+    isNowhere,
+    isThere,
+    quotWedge,
+    toWedge,
+    wedge,
+    wedgeLeft,
+    wedgeRight,
+    type (∨),
+  )
 import Data.Zip
 import Relude.Applicative
 import Relude.Base hiding (chr)
@@ -404,7 +418,7 @@ instance Assoc Wedge where
   assoc = Data.Wedge.reassocLR
   unassoc = Data.Wedge.reassocRL
 
-instance Swap Wedgewhere
+instance Swap Wedge where
   swap = Data.Wedge.swapCan
 
 -- gatherCans :: (Zip f, Functor f, Monoid (f (Can a b))) => Can (f a) (f b) -> f (Can a b)
@@ -424,7 +438,7 @@ instance Swap Wedgewhere
 -- instance Unfolding Either where
 --   unfoldingr f s = case f s of
 --     Left a -> pure a
---     Right b -> 
+--     Right b ->
 
 -- classes Applicative Alternative Eq Ord Generic Show Read
 -- One Hashable IsList NFData Enum Bounded Foldable Traversable Bifoldable Bitraverasable

@@ -5,6 +5,7 @@ license:            MIT
 copyright:          2021 Sofia M.A
 maintainer:         sofia.ma@protonmail.com
 author:             Sofia M.A
+
 -- category:         
 -- synopsis:
 -- description:
@@ -16,11 +17,11 @@ extra-source-files:
 
 library
   build-depends:
-    array
+    , array
     , assoc
     , base
-    , bytestring
     , bifunctors
+    , bytestring
     , comonad
     , comonad-extras
     , containers
@@ -30,7 +31,7 @@ library
     , mtl
     , profunctors
     , recursion-schemes
-    , relude >= 1.0
+    , relude                >=1.0
     , semialign
     , smash
     , tagged
@@ -40,7 +41,6 @@ library
     , unordered-containers
     , validation
 
-
   mixins:
     base hiding (Prelude),
     relude
@@ -49,6 +49,8 @@ library
     -Wall -Wincomplete-record-updates -Wincomplete-uni-patterns
 
   default-extensions:
+    NoMonomorphismRestriction
+    NoStarIsType
     ApplicativeDo
     BangPatterns
     BinaryLiterals
@@ -78,7 +80,6 @@ library
     LambdaCase
     LiberalTypeSynonyms
     MonadComprehensions
-    NoMonomorphismRestriction
     MultiParamTypeClasses
     MultiWayIf
     NegativeLiterals
@@ -94,7 +95,6 @@ library
     RankNTypes
     ScopedTypeVariables
     StandaloneDeriving
-    NoStarIsType
     TupleSections
     TypeApplications
     TypeFamilies
