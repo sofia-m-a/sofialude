@@ -60,6 +60,7 @@ module Sofialude
     module Data.Time.Calendar,
     module Data.Time.Clock,
     module Data.Time.LocalTime,
+    module Data.Traversable,
     module Data.Validation,
     module Data.Wedge,
     module Data.Zip,
@@ -103,6 +104,25 @@ module Sofialude
     partitionThese,
     partitionHereThere,
     catThis,
+    gatherCans,
+    gatherWedges,
+    gatherSmashes,
+    ones,
+    enos,
+    twos,
+    heres,
+    theres,
+    smashes,
+    filterOnes,
+    filterTwos,
+    filterEnos,
+    filterNons,
+    filterNadas,
+    filterHeres,
+    filterTheres,
+    filterNowheres,
+    partitionSplitCans,
+    partitionEitherToCan,
     catThat,
     catThese,
     catHere,
@@ -114,6 +134,9 @@ module Sofialude
     eitherToValidation,
     validationToEither,
     validateOrElse,
+    Unfolding (..),
+    Biproduct,
+    Bisum,
   )
 where
 
@@ -132,6 +155,7 @@ import Control.Comonad.Trans.Env (Env, EnvT (..), env, lowerEnvT, runEnv, runEnv
 import Control.Comonad.Trans.Store (Store, StoreT (..), runStore, runStoreT, store)
 import Control.Comonad.Trans.Traced hiding (trace)
 import Control.Lens hiding (index, indices, para, universe)
+import Control.Lens qualified
 import Control.Monad.Trans.Can
 import Control.Monad.Trans.Smash
 import Control.Monad.Trans.Wedge
@@ -172,19 +196,23 @@ import Data.Can
     isNon,
     isOne,
     isTwo,
+    mapCans,
+    partitionCans,
     type (⊗),
   )
 import Data.Can qualified
+-- the same as from Control.Lens
+
+import Data.Can qualified as Can
 import Data.Crosswalk
 import Data.Fix hiding (ana, anaM, cata, cataM, hylo, hyloM, refold)
 import Data.Functor.Base hiding (head, tail)
-import Data.Functor.Combinator hiding (collectI, getI)
+--import Data.Functor.Combinator hiding (collectI, getI)
 import Data.Functor.Foldable hiding (fold)
 import Data.Functor.Product qualified as Product
 import Data.Functor.Sum qualified as Sum
 import Data.Functor.These
 import Data.HashMap.Lazy qualified
-import Data.HashMap.Strict qualified
 import Data.IntMap qualified as IntMap
 import Data.Ix
 import Data.Map qualified as Map
@@ -208,8 +236,10 @@ import Data.Smash
     hulkSmash,
     isNada,
     isSmash,
+    mapSmashes,
     pairSmash,
     pairSmashCan,
+    partitionSmashes,
     quotSmash,
     smash,
     smashCurry,
@@ -225,12 +255,14 @@ import Data.Smash
     type (⨳),
   )
 import Data.Smash qualified
+import Data.Smash qualified as Smash
 import Data.Tagged
 import Data.These hiding (partitionHereThere, partitionThese)
 import Data.These.Combinators hiding (assocThese, bimapThese, bitraverseThese, catHere, catThat, catThere, catThese, catThis, swapThese, unassocThese)
 import Data.Time.Calendar
 import Data.Time.Clock
 import Data.Time.LocalTime
+import Data.Traversable (for)
 import Data.Validation hiding (fromEither, orElse, toEither)
 import Data.Validation qualified as Validation
 import Data.Wedge
@@ -243,6 +275,8 @@ import Data.Wedge
     isHere,
     isNowhere,
     isThere,
+    mapWedges,
+    partitionWedges,
     quotWedge,
     toWedge,
     wedge,
@@ -251,6 +285,7 @@ import Data.Wedge
     type (∨),
   )
 import Data.Wedge qualified
+import Data.Wedge qualified as Wedge
 import Data.Zip
 import Relude.Applicative
 import Relude.Base hiding (chr, ord)
@@ -263,7 +298,7 @@ import Relude.Exception
 import Relude.File
 import Relude.Foldable
 import Relude.Function
-import Relude.Functor hiding ((??)) -- the same as from Control.Lens
+import Relude.Functor hiding ((??))
 import Relude.Lifted
 import Relude.List hiding (filter, map, partitionWith, repeat, uncons, unzip, zip, zip3, zipWith, (++))
 import Relude.Monad hiding (catMaybes, lefts, mapMaybe, mapMaybeM, partitionEithers, rights)
@@ -271,6 +306,10 @@ import Relude.Monoid hiding (Option, WrappedMonoid)
 import Relude.Numeric
 import Relude.Print
 import Relude.String
+
+type Biproduct = Data.Bifunctor.Product.Product
+
+type Bisum = Data.Bifunctor.Sum.Sum
 
 -- | Alias for 'fmap'
 map :: Functor f => (a -> b) -> f a -> f b
@@ -326,7 +365,7 @@ class Functor f => Filterable f where
   mapMaybe f = catMaybes . map f
 
 partitionEithers :: Filterable f => f (Either a b) -> (f a, f b)
-partitionEithers = (\(a, b) -> (catMaybes a, catMaybes b)) . filterUnalign . map (either This That)
+partitionEithers = bimap catMaybes catMaybes . filterUnalign . map (either This That)
 
 partitionWith :: Filterable f => (a -> Either b c) -> f a -> (f b, f c)
 partitionWith f = partitionEithers . fmap f
@@ -423,7 +462,7 @@ instance Filterable (HashMap k) where
 instance Filterable (Const r) where
   filterUnalign (Const r) = (Const r, Const r)
   catMaybes (Const r) = Const r
-  mapMaybe f (Const r) = Const r
+  mapMaybe _ (Const r) = Const r
 
 instance Filterable f => Filterable (IdentityT f) where
   mapMaybe f (IdentityT a) = IdentityT (mapMaybe f a)
@@ -515,30 +554,176 @@ instance Assoc Wedge where
 instance Swap Wedge where
   swap = Data.Wedge.swapWedge
 
--- gatherCans :: (Zip f, Functor f, Monoid (f (Can a b))) => Can (f a) (f b) -> f (Can a b)
--- gatherCans Non = mempty
--- gatherCans (One fs) = map One fs
--- gatherCans (Eno fs) = map Eno fs
--- gatherCans (Two fs gs) = zipWith Two fs gs
+gatherCans :: (Zip f, Alternative f) => Can (f a) (f b) -> f (Can a b)
+gatherCans Non = empty
+gatherCans (One fs) = map One fs
+gatherCans (Eno fs) = map Eno fs
+gatherCans (Two fs gs) = zipWith Two fs gs
 
--- class Unfolding c where
---   unfoldingr :: Alternative f => (b -> c a b) -> b -> f a
---   unfoldingrM :: (Monad m, Alternative f) => (b -> m (c a b)) -> b -> m (f a)
---   iterateUntil :: Alternative f => (b -> c a b) -> b -> f a
---   iterateUntilM :: Monad m => Alternative f => (b -> m (c a b)) -> b -> m (f a)
---   accumUntil :: Alternative f => Monoid b => (b -> c a b) -> f a
---   accumUntilM :: Monad m => Alternative f => Monoid b => (b -> m (c a b)) -> m (f a)
+gatherWedges :: Alternative f => Wedge (f a) (f b) -> f (Wedge a b)
+gatherWedges Nowhere = empty
+gatherWedges (Here as) = fmap Here as
+gatherWedges (There bs) = fmap There bs
 
--- instance Unfolding Either where
---   unfoldingr f s = case f s of
---     Left a -> pure a
---     Right b ->
+gatherSmashes :: (Alternative f, Zip f) => Smash (f a) (f b) -> f (Smash a b)
+gatherSmashes Nada = empty
+gatherSmashes (Smash a b) = zipWith Smash a b
 
--- classes Applicative Alternative Eq Ord Generic Show Read
--- One Hashable IsList NFData Enum Bounded Foldable Traversable Bifoldable Bitraverasable
--- Functor Bifunctor Semigroup Monoid
+ones :: Filterable f => f (Can a b) -> f a
+ones = mapMaybe \case
+  One a -> Just a
+  _ -> Nothing
 
--- containers HashMap HashSet IntMap IntSet Map Set Seq NonEmpty ByteString Text []
+enos :: Filterable f => f (Can a b) -> f b
+enos = mapMaybe \case
+  Eno b -> Just b
+  _ -> Nothing
+
+twos :: Filterable f => f (Can a b) -> f (a, b)
+twos = mapMaybe \case
+  Two a b -> Just (a, b)
+  _ -> Nothing
+
+heres :: Filterable f => f (Wedge a b) -> f a
+heres = mapMaybe \case
+  Here a -> Just a
+  _ -> Nothing
+
+theres :: Filterable f => f (Wedge a b) -> f b
+theres = mapMaybe \case
+  There a -> Just a
+  _ -> Nothing
+
+smashes :: Filterable f => f (Smash a b) -> f (a, b)
+smashes = mapMaybe fromSmash
+
+-- remove 'One's from a 'Filterable'
+filterOnes :: Filterable f => f (Can a b) -> f (Can a b)
+filterOnes = filter (not . isOne)
+
+-- remove 'Eno's from a 'Filterable'
+filterEnos :: Filterable f => f (Can a b) -> f (Can a b)
+filterEnos = filter (not . isEno)
+
+-- remove 'Two's from a 'Filterable'
+filterTwos :: Filterable f => f (Can a b) -> f (Can a b)
+filterTwos = filter (not . isTwo)
+
+-- remove 'Non's from a 'Filterable'
+filterNons :: Filterable f => f (Can a b) -> f (Can a b)
+filterNons = filter (not . isNon)
+
+filterHeres :: Filterable f => f (Wedge a b) -> f (Wedge a b)
+filterHeres = filter (not . isHere)
+
+filterTheres :: Filterable f => f (Wedge a b) -> f (Wedge a b)
+filterTheres = filter (not . isThere)
+
+filterNowheres :: Filterable f => f (Wedge a b) -> f (Wedge a b)
+filterNowheres = filter (not . isNowhere)
+
+filterNadas :: Filterable f => f (Smash a b) -> f (Smash a b)
+filterNadas = filter (not . isNada)
+
+partitionEitherToCan :: (Foldable f, Filterable f) => f (Either a b) -> Can (f a) (f b)
+partitionEitherToCan f = case partitionEithers f of
+  (a, b) | null a && null b -> Non
+  (a, b) | null a -> Eno b
+  (a, b) | null b -> One a
+  (a, b) | otherwise -> Two a b
+
+partitionSplitCans :: Filterable f => f (Can a b) -> (f a, f b, f (a, b))
+partitionSplitCans f =
+  (\((a, b), c) -> (a, b, c)) $
+    first partitionEithers . partitionEithers $
+      flip
+        mapMaybe
+        f
+        \case
+          Non -> Nothing
+          One a -> Just $ Left $ Left a
+          Eno b -> Just $ Left $ Right b
+          Two a b -> Just $ Right (a, b)
+
+class Unfolding c where
+  {-# MINIMAL unfoldingrM, iterateUntilM, accumUntilM #-}
+  unfoldingr :: Alternative f => (b -> c a b) -> b -> f a
+  unfoldingr f = runIdentity . unfoldingrM (pure . f)
+  unfoldingrM :: (Monad m, Alternative f) => (b -> m (c a b)) -> b -> m (f a)
+  iterateUntil :: Alternative f => (b -> c a b) -> b -> f a
+  iterateUntil f = runIdentity . iterateUntilM (pure . f)
+  iterateUntilM :: Monad m => Alternative f => (b -> m (c a b)) -> b -> m (f a)
+  accumUntil :: Alternative f => Monoid b => (b -> c a b) -> f a
+  accumUntil f = runIdentity (accumUntilM (pure . f))
+  accumUntilM :: Monad m => Alternative f => Monoid b => (b -> m (c a b)) -> m (f a)
+
+instance Unfolding Either where
+  unfoldingrM f b =
+    f b >>= \case
+      Left a -> (pure a <|>) <$> unfoldingrM f b
+      Right b' -> unfoldingrM f b'
+  iterateUntilM f b =
+    f b >>= \case
+      Left a -> pure (pure a)
+      Right b' -> iterateUntilM f b'
+  accumUntilM f = go mempty
+    where
+      go b =
+        f b >>= \case
+          Left a -> (pure a <|>) <$> go b
+          Right b' -> go (b' `mappend` b)
+
+instance Unfolding These where
+  unfoldingrM f b =
+    f b >>= \case
+      This a -> (pure a <|>) <$> unfoldingrM f b
+      That b' -> unfoldingrM f b'
+      These a b' -> (pure a <|>) <$> unfoldingrM f b'
+  iterateUntilM f b =
+    f b >>= \case
+      This a -> pure (pure a)
+      That b' -> iterateUntilM f b'
+      These a _ -> pure (pure a)
+  accumUntilM f = go mempty
+    where
+      go b =
+        f b >>= \case
+          This a -> (pure a <|>) <$> go b
+          That b' -> go (b' `mappend` b)
+          These a b' -> (pure a <|>) <$> go (b' `mappend` b)
+
+instance Unfolding Can where
+  unfoldingrM = Can.unfoldrM
+  iterateUntilM = Can.iterateUntilM
+  accumUntilM = Can.accumUntilM
+
+instance Unfolding Smash where
+  unfoldingrM = Smash.unfoldrM
+  iterateUntilM = Smash.iterateUntilM
+  accumUntilM = Smash.accumUntilM
+
+instance Unfolding Wedge where
+  unfoldingrM = Wedge.unfoldrM
+  iterateUntilM = Wedge.iterateUntilM
+  accumUntilM = Wedge.accumUntilM
+
+paraPlate :: Plated a => (a -> [r] -> r) -> a -> r
+paraPlate = Control.Lens.para
+
+universePlate :: Plated a => a -> [a]
+universePlate = Control.Lens.universe
+
+filterIndices ::
+  (Indexable i p, Applicative f) =>
+  (i -> Bool) ->
+  Optical' p (Indexed i) f a a
+filterIndices = Control.Lens.indices
+
+atIndex ::
+  (Indexable i p, Eq i, Applicative f) =>
+  i ->
+  Optical' p (Indexed i) f a a
+atIndex = Control.Lens.index
 
 -- critiques
 -- Enum is non-total

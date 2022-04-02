@@ -28,7 +28,7 @@ library
     , comonad-extras
     , containers
     , data-fix
-    , functor-combinators
+    --, functor-combinators
     , lens
     , mtl
     , profunctors
